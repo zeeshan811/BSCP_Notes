@@ -6,4 +6,7 @@ Notes for Burp Suite Certified Practitioner
 * Make sure you use these notes as a guide only
 * Try to make your own customized notes
 * There are 4 xmind files which consist of exploit techniques, payloads, tips techniques for cracking the exam:
-** 
+  * Advance Topics
+  * Server-Side Vulnerabilities
+  * Client-Side Vulnerabilities
+  * Tools and payloads for the exam
