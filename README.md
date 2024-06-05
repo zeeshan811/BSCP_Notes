@@ -367,8 +367,24 @@ This guide provides a comprehensive flow for testing various types of HTTP reque
 
 ### 1. Start
 
-### 2. Check for HTTP Request Smuggling Vulnerability
-- **Action**: Identify potential vulnerability to HTTP request smuggling.
+### 2. Identify HTTP Version Used
+- **Action**: Determine if the server is using HTTP/1.1 or HTTP/2.
+- **Tools**: Burp Suite, Wireshark, browser developer tools.
+- **Payloads**:
+  - Check the server response headers to confirm the HTTP version.
+  - Example 1 (HTTP/1.1):
+```
+    GET / HTTP/1.1
+    Host: vulnerable-website.com
+```
+  - Example 2 (HTTP/2):
+```
+    GET / HTTP/2.0
+    Host: vulnerable-website.com
+```
+
+### 3. Check for HTTP Request Smuggling Vulnerability
+- **Action**: Test this only if HTTP /1.1downgrade was possible. Identify potential vulnerability to HTTP request smuggling if you cant downgrade following steps 5,6,7
 - **Tools**: Burp Suite, manual HTTP request crafting.
 - **Payloads**:
   - Example 1:
@@ -393,32 +409,7 @@ This guide provides a comprehensive flow for testing various types of HTTP reque
     Host: vulnerable-website.com
 ```
 
-### 3. Identify HTTP Version Used
-- **Action**: Determine if the server is using HTTP/1.1 or HTTP/2.
-- **Tools**: Burp Suite, Wireshark, browser developer tools.
-- **Payloads**:
-  - Check the server response headers to confirm the HTTP version.
-  - Example 1 (HTTP/1.1):
-```
-    GET / HTTP/1.1
-    Host: vulnerable-website.com
-```
-  - Example 2 (HTTP/2):
-```
-    GET / HTTP/2.0
-    Host: vulnerable-website.com
-```
-
-### 4. HTTP/2 Downgrade Test
-- **Action**: Test if downgrading to HTTP/1.1 is possible when the server supports HTTP/2.
-- **Payloads**: Modify request headers to force HTTP/1.1 usage.
-  - Example:
-```
-    GET / HTTP/1.1
-    Host: vulnerable-website.com
-```
-
-### 5. Test for HTTP/1.1 Smuggling Types
+### 4. Test for HTTP/1.1 Smuggling Types
 
 #### TE.CL (Transfer-Encoding: chunked and Content-Length)
 ```
@@ -471,7 +462,7 @@ Expected Behavior:
 
 The server may incorrectly handle the repeated transfer encoding headers, resulting in request smuggling.
 
-### 6. Test for HTTP/2 Smuggling Types
+### 5. Test for HTTP/2 Smuggling Types
 
 ### H2.CL (HTTP/2 with Content-Length)
 
@@ -504,7 +495,7 @@ Expected Behavior:
 
 The server may handle the Transfer-Encoding header incorrectly, leading to request smuggling.
 
-### 7. Test for HTTP/2 Request Smuggling via CRLF Injection
+### 6. Test for HTTP/2 Request Smuggling via CRLF Injection
 
 ```
 POST /vulnerable-endpoint HTTP/2.0
@@ -514,7 +505,7 @@ X-Injected-Header: value\r\nGET / HTTP/1.1\r\nHost: vulnerable-website.com\r\n\r
 
 malicious=data
 ```
-### 8. Test for HTTP/2 Request Splitting via CRLF Injection
+### 7. Test for HTTP/2 Request Splitting via CRLF Injection
 
 ```
 GET /vulnerable-endpoint HTTP/2.0
@@ -527,13 +518,13 @@ Expected Behavior:
 
 The server may split the request and process the injected GET /malicious HTTP/2.0 as a separate request.
 
-### 9. Observe Server Responses
+### 8. Observe Server Responses
 
 Monitor for signs of smuggling:
 Split requests
 Delayed responses
 Unexpected responses using Burp Suite, server logs, and HTTP response analysis.
 
-### 10. Confirm Exploitable Vulnerabilities
+### 9. Confirm Exploitable Vulnerabilities
 
 Verify if the observed behavior can be exploited using various payloads to determine the extent of the vulnerability.
