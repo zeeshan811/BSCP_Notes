@@ -373,7 +373,6 @@ This guide provides a comprehensive flow for testing various types of HTTP reque
 - **Payloads**:
   - Example 1:
 ```
-    plaintext
     POST / HTTP/1.1
     Host: vulnerable-website.com
     Content-Length: 44
@@ -386,7 +385,6 @@ This guide provides a comprehensive flow for testing various types of HTTP reque
 ```
   - Example 2:
 ```
-    plaintext
     GET / HTTP/1.1
     Host: vulnerable-website.com
     Content-Length: 12
@@ -402,13 +400,11 @@ This guide provides a comprehensive flow for testing various types of HTTP reque
   - Check the server response headers to confirm the HTTP version.
   - Example 1 (HTTP/1.1):
 ```
-    plaintext
     GET / HTTP/1.1
     Host: vulnerable-website.com
 ```
   - Example 2 (HTTP/2):
 ```
-    plaintext
     GET / HTTP/2.0
     Host: vulnerable-website.com
 ```
@@ -418,7 +414,6 @@ This guide provides a comprehensive flow for testing various types of HTTP reque
 - **Payloads**: Modify request headers to force HTTP/1.1 usage.
   - Example:
 ```
-    plaintext
     GET / HTTP/1.1
     Host: vulnerable-website.com
 ```
@@ -427,7 +422,6 @@ This guide provides a comprehensive flow for testing various types of HTTP reque
 
 #### TE.CL (Transfer-Encoding: chunked and Content-Length)
 ```
-plaintext
 POST / HTTP/1.1
 Host: vulnerable-website.com
 Transfer-Encoding: chunked
