@@ -371,7 +371,8 @@ This guide provides a comprehensive flow for testing various types of HTTP reque
 - **Action**: Identify potential vulnerability to HTTP request smuggling.
 - **Tools**: Burp Suite, manual HTTP request crafting.
 - **Payloads**:
-  - Example 1:```
+  - Example 1:
+```
     plaintext
     POST / HTTP/1.1
     Host: vulnerable-website.com
@@ -382,8 +383,9 @@ This guide provides a comprehensive flow for testing various types of HTTP reque
 
     GET / HTTP/1.1
     Host: vulnerable-website.com
-    ```
-  - Example 2:```
+```
+  - Example 2:
+```
     plaintext
     GET / HTTP/1.1
     Host: vulnerable-website.com
@@ -391,32 +393,35 @@ This guide provides a comprehensive flow for testing various types of HTTP reque
 
     GET /malicious HTTP/1.1
     Host: vulnerable-website.com
-    ```
+```
 
 ### 3. Identify HTTP Version Used
 - **Action**: Determine if the server is using HTTP/1.1 or HTTP/2.
 - **Tools**: Burp Suite, Wireshark, browser developer tools.
 - **Payloads**:
   - Check the server response headers to confirm the HTTP version.
-  - Example 1 (HTTP/1.1):```
+  - Example 1 (HTTP/1.1):
+```
     plaintext
     GET / HTTP/1.1
     Host: vulnerable-website.com
-    ```
-  - Example 2 (HTTP/2):```
+```
+  - Example 2 (HTTP/2):
+```
     plaintext
     GET / HTTP/2.0
     Host: vulnerable-website.com
-    ```
+```
 
 ### 4. HTTP/2 Downgrade Test
 - **Action**: Test if downgrading to HTTP/1.1 is possible when the server supports HTTP/2.
 - **Payloads**: Modify request headers to force HTTP/1.1 usage.
-  - Example:```
+  - Example:
+```
     plaintext
     GET / HTTP/1.1
     Host: vulnerable-website.com
-    ```
+```
 
 ### 5. Test for HTTP/1.1 Smuggling Types
 
